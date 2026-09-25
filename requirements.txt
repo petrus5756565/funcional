@@ -1,1 +1,3 @@
 Pillow  # opcional: só para exibir a logo no login
+Flask
+requests

@@ -1,10 +1,16 @@
 """Telas do aplicativo: login e gerenciador de tarefas."""
+import os
 import tkinter as tk
 import webbrowser
 from datetime import date
 from pathlib import Path
 from tkinter import messagebox, ttk
 from urllib.parse import quote_plus
+
+try:
+    import requests
+except ImportError:  # requests é opcional quando o login local é usado.
+    requests = None
 
 from dados import carregar_dados, proximo_id, salvar_dados
 from validacoes import (
@@ -67,9 +73,24 @@ def configurar_estilos(root):
     estilo.map("Primario.TButton",
                background=[("disabled", "#9cc9e8"), ("active", COR_DESTAQUE_ESCURA)])
     estilo.configure("Perigo.TButton", foreground=COR_ERRO, padding=(10, 6))
-
     estilo.configure("Treeview", rowheight=26)
     estilo.configure("Treeview.Heading", font=(FONTE, 10, "bold"))
+
+
+API_LOGIN_URL = os.getenv("TAREFAS_API_URL", "http://localhost:5000/api/login")
+USAR_API = os.getenv("TAREFAS_USAR_API", "0") == "1"
+
+
+def autenticar_no_backend(email, senha):
+    """Tenta autenticar via API quando a variável de ambiente estiver habilitada."""
+    if not USAR_API or requests is None:
+        return None
+    try:
+        resposta = requests.post(API_LOGIN_URL, json={"email": email, "senha": senha}, timeout=5)
+        dados = resposta.json()
+        return bool(dados.get("ok"))
+    except (requests.RequestException, ValueError):
+        return False
 
 
 class TelaLogin:
@@ -127,6 +148,11 @@ class TelaLogin:
                    command=self.autenticar).pack(fill="x")
 
         self.entrada_email.focus()
+        definir_atalhos = lambda e: self.entrada_email.focus() if e.keysym == "Tab" else None
+        self.root.bind("<Tab>", definir_atalhos)
+     
+    
+
 
     def alternar_senha(self):
         self.entrada_senha.configure(show="" if self.mostrar_senha_var.get() else "•")
@@ -140,12 +166,20 @@ class TelaLogin:
             self.mostrar_erro(mensagem, campo)
             return
 
-        if email != EMAIL_TESTE or senha != SENHA_TESTE:
-
+        if USAR_API:
+            login_ok = autenticar_no_backend(email, senha)
+            if login_ok is False:
+                self.senha_var.set("")
+                self.mostrar_erro("E-mail ou senha incorretos.", "senha")
+                return
+            if login_ok is not True:
+                self.senha_var.set("")
+                self.mostrar_erro("Não foi possível conectar à API de login.", "senha")
+                return
+        elif email != EMAIL_TESTE or senha != SENHA_TESTE:
             self.senha_var.set("")
             self.mostrar_erro("E-mail ou senha incorretos.", "senha")
-            return("senha")
-            return0
+            return
 
         self.root.unbind("<Return>")
         self.ao_entrar()
@@ -516,3 +550,5 @@ class AppTarefas:
             f"Em andamento: {contagem['Em andamento']}   |   "
             f"Concluídas: {contagem['Concluída']}   |   Atrasadas: {atrasadas}"
         )
+
+

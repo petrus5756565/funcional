@@ -7,7 +7,7 @@ entra com login e pode cadastrar, listar, pesquisar, editar e excluir tarefas é
 ou marcar as taréfas concluidas.
 As tarefas ficam salvas no computador e continuam lá depois de fechar o programa.
 
-**Público:** estudantes e pessoas que querem controlar tarefas do dia a dia sem
+**Público:** estudantes e pessoas que querem controlar tarefas como empresarios tambem, do dia a dia sem
 depender de internet.
 
 ## Requisitos
